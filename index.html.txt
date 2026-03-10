@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 BLE Controller</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔵 ESP32 BLE Controller</h1>
+            <div id="status" class="status disconnected">
+                <span id="status-indicator" class="status-dot"></span>
+                <span id="status-text">Disconnected</span>
+            </div>
+        </div>
+
+        <div class="control-section">
+            <button id="connect-btn" class="btn btn-primary">Connect to ESP32</button>
+            <button id="disconnect-btn" class="btn btn-secondary" disabled>Disconnect</button>
+        </div>
+
+        <div class="controls">
+            <div class="button-group">
+                <button id="on-btn" class="btn btn-on" disabled>
+                    <span class="btn-icon">✓</span>
+                    <span>Turn ON</span>
+                </button>
+                <button id="off-btn" class="btn btn-off" disabled>
+                    <span class="btn-icon">✕</span>
+                    <span>Turn OFF</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="terminal-section">
+            <div class="terminal-header">
+                <h3>Terminal</h3>
+                <button id="clear-btn" class="btn-small">Clear</button>
+            </div>
+            <div id="terminal" class="terminal"></div>
+            <div class="terminal-input">
+                <input type="text" id="message-input" placeholder="Send custom message..." disabled>
+                <button id="send-btn" class="btn-small" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

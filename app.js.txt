@@ -1,0 +1,143 @@
+// BLE Configuration
+const BLE_CONFIG = {
+    SERVICE_UUID: '12345678-1234-1234-1234-1234567890ab',
+    CHARACTERISTIC_UUID: '87654321-4321-4321-4321-ba0987654321',
+    DEVICE_NAME: 'Esp32-BT'
+};
+
+// Global State
+let device = null;
+let characteristic = null;
+
+// DOM Elements
+const connectBtn = document.getElementById('connect-btn');
+const disconnectBtn = document.getElementById('disconnect-btn');
+const onBtn = document.getElementById('on-btn');
+const offBtn = document.getElementById('off-btn');
+const sendBtn = document.getElementById('send-btn');
+const clearBtn = document.getElementById('clear-btn');
+const messageInput = document.getElementById('message-input');
+const terminal = document.getElementById('terminal');
+const statusDiv = document.getElementById('status');
+const statusText = document.getElementById('status-text');
+
+// Event Listeners
+connectBtn.addEventListener('click', connectBLE);
+disconnectBtn.addEventListener('click', disconnectBLE);
+onBtn.addEventListener('click', () => sendCommand('on'));
+offBtn.addEventListener('click', () => sendCommand('off'));
+sendBtn.addEventListener('click', sendCustomMessage);
+clearBtn.addEventListener('click', () => { terminal.innerHTML = ''; });
+messageInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendCustomMessage();
+});
+
+// Log to terminal
+function log(message, type = 'info') {
+    const el = document.createElement('div');
+    el.className = `terminal-message ${type}`;
+    el.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    terminal.appendChild(el);
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+// Connect to BLE Device
+async function connectBLE() {
+    try {
+        log('Scanning for ESP32...', 'info');
+        
+        device = await navigator.bluetooth.requestDevice({
+            filters: [{ name: BLE_CONFIG.DEVICE_NAME }],
+            optionalServices: [BLE_CONFIG.SERVICE_UUID]
+        });
+
+        log(`Found device: ${device.name}`, 'success');
+        log('Connecting to GATT server...', 'info');
+
+        const server = await device.gatt.connect();
+        log('Connected to GATT server', 'success');
+
+        const service = await server.getPrimaryService(BLE_CONFIG.SERVICE_UUID);
+        characteristic = await service.getCharacteristic(BLE_CONFIG.CHARACTERISTIC_UUID);
+
+        log('Connected to ESP32!', 'success');
+        updateUI(true);
+
+        device.addEventListener('gattserverdisconnected', () => {
+            log('Device disconnected', 'error');
+            updateUI(false);
+        });
+
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        updateUI(false);
+    }
+}
+
+// Disconnect from BLE Device
+function disconnectBLE() {
+    if (device && device.gatt.connected) {
+        device.gatt.disconnect();
+        log('Disconnected', 'info');
+        updateUI(false);
+    }
+}
+
+// Send Command (on/off)
+async function sendCommand(cmd) {
+    if (!characteristic) {
+        log('Not connected', 'error');
+        return;
+    }
+
+    try {
+        const encoder = new TextEncoder();
+        await characteristic.writeValue(encoder.encode(cmd));
+        log(`Sent: ${cmd}`, 'success');
+    } catch (error) {
+        log(`Error sending command: ${error.message}`, 'error');
+    }
+}
+
+// Send Custom Message
+async function sendCustomMessage() {
+    const msg = messageInput.value.trim();
+    if (!msg) return;
+
+    if (!characteristic) {
+        log('Not connected', 'error');
+        return;
+    }
+
+    try {
+        const encoder = new TextEncoder();
+        await characteristic.writeValue(encoder.encode(msg));
+        log(`Sent: ${msg}`, 'success');
+        messageInput.value = '';
+    } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+    }
+}
+
+// Update UI
+function updateUI(isConnected) {
+    connectBtn.disabled = isConnected;
+    disconnectBtn.disabled = !isConnected;
+    onBtn.disabled = !isConnected;
+    offBtn.disabled = !isConnected;
+    sendBtn.disabled = !isConnected;
+    messageInput.disabled = !isConnected;
+
+    if (isConnected) {
+        statusDiv.classList.remove('disconnected');
+        statusDiv.classList.add('connected');
+        statusText.textContent = 'Connected';
+    } else {
+        statusDiv.classList.remove('connected');
+        statusDiv.classList.add('disconnected');
+        statusText.textContent = 'Disconnected';
+    }
+}
+
+// Initial log
+log('Ready to connect', 'info');
